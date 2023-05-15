@@ -4,13 +4,14 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #define BUFSZ 1024
 
-void usage(int args, char **argw)
+void usage(int args, char **argv)
 {
-    printf("usage: %s <server ip> <server port>");
-    printf("example: %s 127.0.0.1 51511");
+    printf("usage: %s <server ip> <server port>\n", argv[0]);
+    printf("example: %s 127.0.0.1 51511\n");
     exit(EXIT_FAILURE);
 }
 void logExit(const char *msg)
@@ -25,17 +26,17 @@ void main(int argc, char **argv)
         usage(argc, argv);
     }
 
+    struct sockaddr_storage storage; //estrutura de armazenamento p/ ipv6 ou ipv4
+    if (0 != addrParse(argv[1], argv[2], &storage)) //parsing criada em common.c (útil tbm para server) do endereço para dentro da estrutura
+    {
+        usage(argc, argv);
+    }
+
     // criação do socket
-    int s = socket(AF_INET, SOCK_STREAM, 0); // CRIA SOCKET CONEXÃO INTERNET COM TCP (lib types e socket)
+    int s = socket(storage.ss_family, SOCK_STREAM, 0); // CRIA SOCKET CONEXÃO INTERNET COM TCP (lib types e socket)
     if (s == -1)
     {
         logExit("socket");
-    }
-
-    struct sockaddr_storage storage; //estrutura de armazenamento p/ ipv6 ou ipv4
-    if (0 != addrParse(argv[1], argv[2], &storage)) //parsing //criada em common.c (útil tbm para server) do endereço para dentro da estrutura
-    {
-        usage(argc, argv);
     }
 
     struct sockaddr *addr = (struct sockaddr *)(&storage); //instanciação do endereço
