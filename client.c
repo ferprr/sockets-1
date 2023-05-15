@@ -16,7 +16,7 @@ void usage(int args, char **argv)
     printf("example: %s 127.0.0.1 51511\n", argv[0]);
     exit(EXIT_FAILURE);
 }
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     if (argc < 3)
     {
@@ -45,7 +45,7 @@ void main(int argc, char **argv)
     char addrstr[BUFSZ];
     addrToStr(addr, addrstr, BUFSZ); //criada em common.c (útil tbm para server)
 
-    printf("connected to %s\n");
+    printf("connected to %s\n", addrstr);
 
     // client manda o dado
     char buf[BUFSZ];
