@@ -1,9 +1,14 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <string.h>
 #include <arpa/inet.h>
 
+void logExit(const char *msg)
+{
+    perror(msg);
+    exit(EXIT_FAILURE);
+}
 int addrParse(const char *addrstr, const char *portstr, struct sockaddr_storage *storage)
 {
     if (addrstr == NULL || portstr == NULL)
@@ -34,7 +39,7 @@ int addrParse(const char *addrstr, const char *portstr, struct sockaddr_storage 
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)storage;
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = port;
-        memcpy(&(addr6->sin6_addr), inaddr6, sizeof(inaddr6));
+        memcpy(&(addr6->sin6_addr), &inaddr6, sizeof(inaddr6));
         return 0;
     }
 
@@ -61,7 +66,7 @@ void addrToStr(const struct sockaddr *addr, char *str, size_t strsize)
     else if (addr->sa_family == AF_INET6)
     {
         version = 6;
-        struct sockaddr_in6 *addr6 = (struct sockaddr_in *)addr;
+        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
 
         if (!inet_ntop(AF_INET6, &(addr6->sin6_addr), addrstr, INET6_ADDRSTRLEN + 1)) // network to presentation
         {

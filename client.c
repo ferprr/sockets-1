@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -13,12 +13,7 @@
 void usage(int args, char **argv)
 {
     printf("usage: %s <server ip> <server port>\n", argv[0]);
-    printf("example: %s 127.0.0.1 51511\n");
-    exit(EXIT_FAILURE);
-}
-void logExit(const char *msg)
-{
-    perror(msg);
+    printf("example: %s 127.0.0.1 51511\n", argv[0]);
     exit(EXIT_FAILURE);
 }
 void main(int argc, char **argv)

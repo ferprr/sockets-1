@@ -8,3 +8,5 @@ int addrParse(const char *addrstr, const char *portstr, struct sockaddr_storage 
 void addrToStr(const struct sockaddr *addr, char *str, size_t strsize);
 
 int server_sockaddr_init(const char *proto, const char *portstr, struct sockaddr_storage *storage);
+
+void logExit(const char *msg);
