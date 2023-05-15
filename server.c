@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -59,6 +61,21 @@ int main(int argc, char **argv)
             logExit("accept");
         }
         
-    }
+        char client_addrstr[BUFSZ];
+        addrToStr(client_addr, client_addrstr, BUFSZ);
+        printf("[log] connection fron %s\n", client_addrstr);
 
+        char buf[BUFSZ];
+        memset(buf, 0, BUFSZ);
+        size_t count = recv(client_sock, buf, BUFSZ, 0);
+        printf("[msg] %s, %d bytes: %s\n", client_addrstr, (int)count, buf);
+
+        sprintf(buf, "remote endpoint: %s\n", client_addrstr);
+        count = send(client_sock, buf, strlen(buf)+1, 0);
+        if (count != strlen(buf)+1) {
+            logExit("send");
+        }
+        close(client_sock);
+    }
+    exit(EXIT_SUCCESS);
 }
