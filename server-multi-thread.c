@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -15,6 +16,37 @@ void usage(int argc, char **argv)
     printf("usage: %s <v4|v6> <server port>\n", argv[0]);
     printf("example: %s v4 51511\n", argv[0]);
     exit(EXIT_FAILURE);
+}
+
+struct client_data
+{
+    int client_sock;
+    struct sockaddr_storage storage;
+};
+
+void * client_thread(void *data)
+{
+    struct client_data *cdata = (struct client_data *) data;
+    struct sockaddr *client_addr = (struct sockaddr *)(&cdata->storage);
+
+    char client_addrstr[BUFSZ];
+    addrToStr(client_addr, client_addrstr, BUFSZ);
+    printf("[log] connection from %s\n", client_addrstr);
+
+    char buf[BUFSZ];
+    memset(buf, 0, BUFSZ);
+    size_t count = recv(cdata->client_sock, buf, BUFSZ - 1, 0);
+    printf("[msg] %s, %d bytes: %s\n", client_addrstr, (int)count, buf);
+
+    sprintf(buf, "remote endpoint: %.1000s\n", client_addrstr);
+    count = send(cdata->client_sock, buf, strlen(buf) + 1, 0);
+    if (count != strlen(buf) + 1)
+    {
+        logExit("send");
+    }
+    close(cdata->client_sock);
+
+    pthread_exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char **argv)
@@ -38,7 +70,7 @@ int main(int argc, char **argv)
     }
 
     int enable = 1;
-    if (0 != setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int))) //reutilizar porto
+    if (0 != setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int))) // reutilizar porto
     {
         logExit("setsocketopt");
     }
@@ -70,22 +102,18 @@ int main(int argc, char **argv)
             logExit("accept");
         }
 
-        char client_addrstr[BUFSZ];
-        addrToStr(client_addr, client_addrstr, BUFSZ);
-        printf("[log] connection from %s\n", client_addrstr);
+        // servidor está pronto para receber conexões de clientes
 
-        char buf[BUFSZ];
-        memset(buf, 0, BUFSZ);
-        size_t count = recv(client_sock, buf, BUFSZ - 1, 0);
-        printf("[msg] %s, %d bytes: %s\n", client_addrstr, (int)count, buf);
-
-        sprintf(buf, "remote endpoint: %.1000s\n", client_addrstr);
-        count = send(client_sock, buf, strlen(buf) + 1, 0);
-        if (count != strlen(buf) + 1)
+        struct client_data *cdata = malloc(sizeof(*cdata));
+        if (!cdata)
         {
-            logExit("send");
+            logExit("malloc");
         }
-        close(client_sock);
+        cdata->client_sock = client_sock;
+        memcpy(&(cdata->storage), &client_storage, sizeof(client_storage));
+
+        pthread_t tid;
+        pthread_create(&tid, NULL, client_thread, cdata); // cria outro fluxo de execução para cada thread, mas o fluxo principal continua executando while e recebendo novas conexões
     }
     exit(EXIT_SUCCESS);
 }

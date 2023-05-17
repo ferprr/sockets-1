@@ -57,8 +57,7 @@ void addrToStr(const struct sockaddr *addr, char *str, size_t strsize)
     {
         version = 4;
         struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
-
-        if (!inet_ntop(AF_INET, &(addr4->sin_addr), addrstr, INET6_ADDRSTRLEN + 1)) // network to presentation
+        if (!inet_ntop(AF_INET, &(addr4->sin_addr), addrstr, INET6_ADDRSTRLEN + 1)) //network to presentation
         {
             logExit("ntop");
         }
@@ -68,8 +67,7 @@ void addrToStr(const struct sockaddr *addr, char *str, size_t strsize)
     {
         version = 6;
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)addr;
-
-        if (!inet_ntop(AF_INET6, &(addr6->sin6_addr), addrstr, INET6_ADDRSTRLEN + 1)) // network to presentation
+        if (!inet_ntop(AF_INET6, &(addr6->sin6_addr), addrstr, INET6_ADDRSTRLEN + 1)) //network to presentation
         {
             logExit("ntop");
         }
@@ -79,7 +77,6 @@ void addrToStr(const struct sockaddr *addr, char *str, size_t strsize)
     {
         logExit("unknown protocol family.");
     }
-
     if (str)
     {
         snprintf(str, strsize, "IPv%d %s %hu", version, addrstr, port);
@@ -106,7 +103,7 @@ int server_sockaddr_init(const char *proto, const char *portstr, struct sockaddr
     else if (0 == strcmp(proto, "v6"))
     {
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)storage;
-        addr6->sin6_family = AF_INET;
+        addr6->sin6_family = AF_INET6;
         addr6->sin6_addr = in6addr_any;
         addr6->sin6_port = port;
         return 0;
