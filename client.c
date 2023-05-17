@@ -4,13 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #define BUFSZ 1024
 
-void usage(int args, char **argv)
+void usage(int argc, char **argv)
 {
     printf("usage: %s <server ip> <server port>\n", argv[0]);
     printf("example: %s 127.0.0.1 51511\n", argv[0]);
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
     }
 
     struct sockaddr *addr = (struct sockaddr *)(&storage); //instanciação do endereço
-    if (0 != connect(0, addr, sizeof(storage))) // CONECTA NO SOCKET
+    if (0 != connect(s, addr, sizeof(storage))) // CONECTA NO SOCKET
     {
         logExit("connect");
     }

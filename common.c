@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
 #include <arpa/inet.h>
 
 void logExit(const char *msg)
@@ -34,7 +35,7 @@ int addrParse(const char *addrstr, const char *portstr, struct sockaddr_storage 
     }
 
     struct in6_addr inaddr6;                    // 128-bit IPv6 address
-    if (inet_pton(AF_INET6, addrstr, &inaddr4)) // parsing do endereço p ipv4 (presentation to network)
+    if (inet_pton(AF_INET6, addrstr, &inaddr6)) // parsing do endereço p ipv4 (presentation to network)
     {
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)storage;
         addr6->sin6_family = AF_INET6;
