@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     }
 
     int enable = 1;
-    if (0 != setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int))) //reutilizar porto
+    if (0 != setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int))) // reutilizar porto
     {
         logExit("setsocketopt");
     }
@@ -76,16 +76,100 @@ int main(int argc, char **argv)
 
         char buf[BUFSZ];
         memset(buf, 0, BUFSZ);
-        size_t count = recv(client_sock, buf, BUFSZ - 1, 0);
-        printf("[msg] %s, %d bytes: %s\n", client_addrstr, (int)count, buf);
 
-        sprintf(buf, "remote endpoint: %.1000s\n", client_addrstr);
-        count = send(client_sock, buf, strlen(buf) + 1, 0);
-        if (count != strlen(buf) + 1)
+        // size_t count = recv(client_sock, buf, BUFSZ - 1, 0);
+        // printf("[msg] %s, %d bytes: %s\n", client_addrstr, (int)count, buf);
+
+        // sprintf(buf, "remote endpoint: %.1000s\n", client_addrstr);
+        // count = send(client_sock, buf, strlen(buf) + 1, 0);
+        // if (count != strlen(buf) + 1)
+        // {
+        //     logExit("send");
+        // }
+
+        // recebe comando do cliente
+        ssize_t bytes_received = recv(client_sock, buf, BUFSZ, 0);
+        if (bytes_received > 0)
         {
-            logExit("send");
+            buf[bytes_received] = '\0';
+
+            printf("command received: %s\n", buf);
+
+            // verifica se o comando é "send file"
+            if (strcmp(buf, "send file") == 0)
+            {
+                // recebe o nome do arquivo
+                bytes_received = recv(client_sock, buf, BUFSZ, 0);
+                if (bytes_received > 0)
+                {
+                    buf[bytes_received] = '\0';
+                    printf("file received from client: %s", buf);
+
+                    // verifica se arquivo já existe no servidor
+                    FILE *file = fopen(buf, "rb");
+                    if (file != NULL)
+                    {
+                        fclose(file);
+
+                        // sobrescreve
+                        file = fopen(buf, "wb");
+                        if (file == NULL)
+                        {
+                            strcpy(buf, "error receiving file");
+                            send(client_sock, buf, strlen(buf), 0);
+                            printf("error trying to overwritten file\n");
+                        }
+                        else
+                        {
+                            // recebe o arquivo do cliente e salva no servidor
+                            ssize_t bytes_read;
+                            while ((bytes_read = recv(client_sock, buf, BUFSZ, 0) > 0))
+                            {
+                                fwrite(buf, sizeof(char), bytes_read, file);
+                            }
+
+                            fclose(file);
+
+                            strcpy(buf, "file overwritten");
+                            send(client_sock, buf, strlen(buf), 0);
+                            printf("file overwritten\n");
+                        }
+                    }
+                    else
+                    {
+                        // cria novo arquivo no servidor
+
+                        file = fopen(buf, "wb");
+                        if (file == NULL)
+                        {
+                            strcpy(buf, "error receiving file");
+                            send(client_sock, buf, strlen(buf), 0);
+                            printf("error trying to create a new file\n");
+                        }
+                        else
+                        {
+                            // recebe o arquivo e salva no servidor
+                            ssize_t bytes_read;
+                            while ((bytes_read = recv(client_sock, buf, BUFSZ, 0) > 0))
+                            {
+                                fwrite(buf, sizeof(char), bytes_read, file);
+                            }
+
+                            fclose(file);
+
+                            strcpy(buf, "file received");
+                            send(client_sock, buf, strlen(buf), 0);
+                            printf("file received and stored.");
+                        }
+                    }
+                }
+            }
         }
         close(client_sock);
     }
+
+    // encerra com cliente
+    close(s);
+
     exit(EXIT_SUCCESS);
 }
