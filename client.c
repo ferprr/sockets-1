@@ -82,6 +82,8 @@ int main(int argc, char **argv)
         // Verifica o tipo de comando
         if (strcmp(buf, "exit") == 0)
         {
+            // Encerra a conexão com o cliente
+            close(s);
             printf("Sessão encerrada pelo cliente\n");
             break;
         }
@@ -101,7 +103,7 @@ int main(int argc, char **argv)
                 {
                     printf("%s selected\n", filename);
                     selected = 1;
-                    strcpy(selected_file, filename); //na proxima iteração não vai estar com essa cópia, limpou
+                    strcpy(selected_file, filename); // na proxima iteração não vai estar com essa cópia, limpou
                 }
             }
             else
@@ -111,18 +113,18 @@ int main(int argc, char **argv)
         }
         else if (strcmp(buf, "send file") == 0 && selected)
         {
-            // Envia o nome do arquivo para o servidor
-            if (send(s, selected_file, strlen(selected_file), 0) < 0)
-            {
-                perror("Erro ao enviar nome do arquivo para o servidor");
-                break;
-            }
+            // // Envia o nome do arquivo para o servidor
+            // if (send(s, selected_file, strlen(selected_file), 0) < 0)
+            // {
+            //     perror("Erro ao enviar nome do arquivo para o servidor");
+            //     break;
+            // }
 
             // Abre o arquivo para leitura
             FILE *file = fopen(selected_file, "rb");
             if (file == NULL)
             {
-                //puts(selected_file);
+                // puts(selected_file);
                 printf("%s does not exist\n", selected_file);
                 continue;
             }
@@ -158,7 +160,4 @@ int main(int argc, char **argv)
             printf("invalid command.\n");
         }
     }
-
-    // Encerra a conexão com o cliente
-    close(s);
 }

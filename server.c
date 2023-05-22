@@ -76,17 +76,41 @@ int main(int argc, char **argv)
 
         char buf[BUFSZ];
         memset(buf, 0, BUFSZ);
-        size_t count = recv(csock, buf, BUFSZ - 1, 0);
-        printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
 
-        sprintf(buf, "remote endpoint: %.1000s\n", caddrstr);
-        count = send(csock, buf, strlen(buf) + 1, 0);
-        if (count != strlen(buf) + 1)
+        // Recebe dados do cliente
+        int bytesRead = recv(csock, buf, BUFSZ, 0);
+        if (bytesRead < 0)
         {
-            logExit("send");
+            perror("Erro ao receber dados do cliente");
+            break;
         }
-        close(csock);
+        else if (bytesRead == 0)
+        {
+            // Conexão encerrada pelo cliente
+            break;
+        }
+
+        // Abre o arquivo para escrita
+        FILE *file = fopen("x.txt", "wb");
+        if (file == NULL)
+        {
+            printf("Erro ao abrir arquivo\n");
+            continue;
+        }
+
+        // Escreve os dados no arquivo
+        fwrite(buf, 1, bytesRead, file);
+
+        // Verifica se chegou ao final do arquivo
+        if (bytesRead < BUFSZ)
+        {
+            break;
+        }
+
+        fclose(file);
     }
 
-    exit(EXIT_SUCCESS);
+    // // Envia a resposta ao cliente
+    // sprintf(buf, "Arquivo %s recebido com sucesso", filename);
+    // send(csock, buf, strlen(buf), 0);
 }
