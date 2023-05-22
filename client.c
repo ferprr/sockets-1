@@ -30,6 +30,12 @@ int is_valid_extension(const char *filename)
 
     return 0;
 }
+void send_message(int socket, const char *message, const char *filename)
+{
+    char buffer[BUFSZ];
+    sprintf(buffer, "%s %s", filename, message);
+    send(socket, buffer, strlen(buffer), 0);
+}
 void usage(int argc, char **argv)
 {
     printf("usage: %s <server ip> <server port>\n", argv[0]);
@@ -64,100 +70,103 @@ int main(int argc, char **argv)
 
     char addrstr[BUFSZ];
     addrToStr(addr, addrstr, BUFSZ);
+
     int selected = 0;
+    // char *file_path;
+    char file_path[100];
 
-    printf("connected to %s\n", addrstr);
-
-    // Loop principal
     while (1)
     {
+        // Solicita ao usuário o comando
         char buf[BUFSZ];
-        char selected_file[100];
-
         memset(buf, 0, BUFSZ);
-        printf("command> ");
-        fgets(buf, BUFSZ - 1, stdin);
-        buf[strcspn(buf, "\n")] = '\0';
 
-        // Verifica o tipo de comando
-        if (strcmp(buf, "exit") == 0)
+        printf("Digite o comando: ");
+        fgets(buf, sizeof(buf), stdin);
+        buf[strcspn(buf, "\n")] = '\0'; // Remove a quebra de linha do final
+
+        // Verifica o comando digitado
+        const char *command = strtok(buf, " ");
+        const char *arg = strtok(NULL, " ");
+
+        if (command == NULL)
         {
-            // Encerra a conexão com o cliente
-            close(s);
-            printf("Sessão encerrada pelo cliente\n");
-            break;
+            printf("invalid command\n");
+            continue;
+            // close(s);
+            // return 0;
         }
-        else if (strncmp(buf, "select file", 11) == 0)
+
+        // Envia o arquivo selecionado para o servidor
+        if (strcmp(command, "select") == 0 && strcmp(arg, "file") == 0)
         {
-            // Extrai o nome do arquivo
-            char *filename = buf + 12;
-            if (sscanf(buf, "select file %[^\n]", filename) == 1)
+            // Recebe o nome do arquivo selecionado
+            // fgets(file_path, sizeof(file_path), stdin);
+            // file_path[strcspn(file_path, "\n")] = '\0'; // Remove a quebra de linha do final
+            strcpy(file_path, strtok(NULL, "")); // returns pointer to remaining words (filename)
+            // puts(file_path);
+
+            // Verifica se o arquivo é válido (extensões aceitáveis)
+            if (is_valid_extension(file_path) == 0)
             {
-                // Verifica se o arquivo é válido (extensões aceitáveis)
-                if (is_valid_extension(filename) == 0)
-                {
-                    printf("%s not valid!\n", filename);
-                    continue;
-                }
-                else
-                {
-                    printf("%s selected\n", filename);
-                    selected = 1;
-                    strcpy(selected_file, filename); // na proxima iteração não vai estar com essa cópia, limpou
-                }
+                printf("%s not valid!\n", file_path);
+                continue;
             }
             else
             {
-                printf("no file selected.\n");
-            }
-        }
-        else if (strcmp(buf, "send file") == 0 && selected)
-        {
-            // Envia o nome do arquivo para o servidor
-            if (send(s, selected_file, strlen(selected_file), 0) < 0)
-            {
-                perror("Erro ao enviar nome do arquivo para o servidor");
-                break;
-            }
-
-            //Abre o arquivo para leitura
-            FILE *file = fopen(selected_file, "rb");
-            if (file == NULL)
-            {
-                // puts(selected_file);
-                printf("%s does not exist\n", selected_file);
+                printf("%s selected\n", file_path);
+                selected = 1;
                 continue;
             }
-
-            // Lê e envia o conteúdo do arquivo para o servidor
-            while (1)
+        }
+        else if (strcmp(command, "send") == 0 && strcmp(arg, "file") == 0 && selected)
+        {
+            // Verifica se o arquivo existe
+            FILE *file = fopen(file_path, "rb");
+            if (file == NULL)
             {
-                // Lê dados do arquivo
-                int bytesRead = fread(buf, 1, BUFSZ, file);
+                printf("%s does not exist\n", file_path);
+                continue;
+                // close(s);
+                // return 0;
+            }
 
-                // Envia dados para o servidor
-                if (send(s, buf, bytesRead, 0) < 0)
-                {
-                    perror("Erro ao enviar arquivo para o servidor");
-                    break;
-                }
+            // Envia o comando "send file" para o servidor
+            send(s, "send file", BUFSZ, 0);
 
-                // Verifica se chegou ao final do arquivo
-                if (bytesRead < BUFSZ)
-                {
-                    break;
-                }
+            // Envia o comando "send file" para o servidor
+            send(s, file_path, strlen(file_path), 0);
+
+            // Envia o arquivo para o servidor
+            ssize_t bytes_read;
+            while ((bytes_read = fread(buf, sizeof(char), BUFSZ, file)) > 0)
+            {
+                send(s, buf, bytes_read, 0);
             }
 
             fclose(file);
+
+            // Recebe a resposta do servidor
+            ssize_t bytes_received = recv(s, buf, BUFSZ, 0);
+            if (bytes_received > 0)
+            {
+                buf[bytes_received] = '\0';
+                printf("Resposta do servidor: %s\n", buf);
+            }
         }
-        else if (strcmp(buf, "send file") == 0 && !selected)
+        else if (strcmp(command, "send") == 0 && strcmp(arg, "file") == 0 && !selected)
         {
             printf("no file selected.\n");
         }
-        else
+        // Encerra a conexão com o servidor
+        else if (strcmp(command, "exit") == 0)
         {
-            printf("invalid command.\n");
+            send_message(s, "exit", "");
+            close(s);
+            printf("client closed connection\n");
+            return 0;
         }
     }
+
+    return 0;
 }
