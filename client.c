@@ -62,99 +62,35 @@ int main(int argc, char **argv)
         logExit("connect");
     }
 
-    // char addrstr[BUFSZ];
-    // addrToStr(addr, addrstr, BUFSZ); //criada em common.c (útil tbm para server)
+    char addrstr[BUFSZ];
+    addrToStr(addr, addrstr, BUFSZ);
 
-    // printf("connected to %s\n", addrstr);
+    printf("connected to %s\n", addrstr);
 
-    // int count = send(s, buf, strlen(buf) + 1, 0); // retorna número de bytes transmitidos na rede (tem q ser strlen + 1, q foi o q mandamos, se não deu erro)
-    // if (count != strlen(buf) + 1)
-    // {
-    //     logExit("send");
-    // }
-    // memset(buf, 0, BUFSZ);
-    // unsigned total = 0;
-    // while (1)
-    // {
-    //     count = recv(s, buf + total, BUFSZ - total, 0); // recebe resposta servidor
-    //     if (count == 0)                                 // não recebeu nada, então conexão fechou
-    //     {
-    //         // connection terminated
-    //         break;
-    //     }
-    //     total += count;
-    // }
-    // close(s); // fecha conexão com socket
-
-    // printf("received %u bytes\n", total);
-    // puts(buf);
-
-    // lendo comando do teclado
     char buf[BUFSZ];
     memset(buf, 0, BUFSZ);
-    printf("message> ");
+    printf("mensagem> ");
     fgets(buf, BUFSZ - 1, stdin);
-
-    const char *command = strtok(buf, " "); // separa string em pedaços, nos espaços, por ex "select"
-    const char *param = strtok(NULL, " ");  // separa string em pedaços, de onde parou na última vez (acima), por ex "file"
-
-    if (command == NULL)
+    size_t count = send(s, buf, strlen(buf) + 1, 0);
+    if (count != strlen(buf) + 1)
     {
-        logExit("invalid command."); // só teste, remover dps
-        close(s);
+        logExit("send");
     }
 
-    if (strcmp(command, "select") == 0)
+    memset(buf, 0, BUFSZ);
+    unsigned total = 0;
+    while (1)
     {
-        if (param == NULL || strcmp(param, "file") != 0)
+        count = recv(s, buf + total, BUFSZ - total, 0);
+        if (count == 0)
         {
-            logExit("no file selected!"); // só teste remover dps
-            close(s);
+            // Connection terminated.
+            break;
         }
-
-        // caminho (COMPLETO) do arquivo
-        char file_path[256];
-        printf("file path: ");
-        fgets(file_path, sizeof(file_path), stdin);
-
-        // verifica se arquivo existe
-        FILE *file = fopen(file_path, "rb");
-        if (file == NULL)
-        {
-            printf("[%s] do not exist\n", file_path);
-            logExit("fopen");
-        }
-
-        // verifica extensão do arquivo
-        if (!is_valid_extension(file_path))
-        {
-            printf("[%s] not valid!", file_path);
-            fclose(file);
-        }
-
-        printf("[%s] selected", file_path); // ready to send file
-
-        // envia comando "send file" para servidor
-        send(s, command, strlen(command), 0);
-
-        // envia nome do arquivo para servidor
-        send(s, file_path, strlen(file_path), 0);
-
-        // envia conteúdo do arquivo
-        ssize_t bytes_read;
-        while ((bytes_read = fread(buf, sizeof(char), BUFSZ, file)) > 0)
-        {
-            send(s, buf, bytes_read, 0);
-        }
-
-        fclose(file);
+        total += count;
     }
-    else
-    {
-        logExit("file");
-    }
+    close(s);
 
-    // receiving answer from the server
-
-    exit(EXIT_SUCCESS);
+    printf("received %u bytes\n", total);
+    puts(buf);
 }

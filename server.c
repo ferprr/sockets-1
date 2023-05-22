@@ -60,116 +60,33 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        struct sockaddr_storage client_storage;
-        struct sockaddr *client_addr = (struct sockaddr *)(&client_storage);
-        socklen_t client_storage_len = sizeof(client_storage);
+        struct sockaddr_storage cstorage;
+        struct sockaddr *caddr = (struct sockaddr *)(&cstorage);
+        socklen_t caddrlen = sizeof(cstorage);
 
-        int client_sock = accept(s, client_addr, &client_storage_len); // quando a conexão é aceita, é criado outro socket para comunicação com o cliente
-        if (client_sock == -1)
+        int csock = accept(s, caddr, &caddrlen);
+        if (csock == -1)
         {
             logExit("accept");
         }
 
-        char client_addrstr[BUFSZ];
-        addrToStr(client_addr, client_addrstr, BUFSZ);
-        printf("[log] connection from %s\n", client_addrstr);
+        char caddrstr[BUFSZ];
+        addrToStr(caddr, caddrstr, BUFSZ);
+        printf("[log] connection from %s\n", caddrstr);
 
         char buf[BUFSZ];
         memset(buf, 0, BUFSZ);
+        size_t count = recv(csock, buf, BUFSZ - 1, 0);
+        printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
 
-        // size_t count = recv(client_sock, buf, BUFSZ - 1, 0);
-        // printf("[msg] %s, %d bytes: %s\n", client_addrstr, (int)count, buf);
-
-        // sprintf(buf, "remote endpoint: %.1000s\n", client_addrstr);
-        // count = send(client_sock, buf, strlen(buf) + 1, 0);
-        // if (count != strlen(buf) + 1)
-        // {
-        //     logExit("send");
-        // }
-
-        // recebe comando do cliente
-        ssize_t bytes_received = recv(client_sock, buf, BUFSZ, 0);
-        if (bytes_received > 0)
+        sprintf(buf, "remote endpoint: %.1000s\n", caddrstr);
+        count = send(csock, buf, strlen(buf) + 1, 0);
+        if (count != strlen(buf) + 1)
         {
-            buf[bytes_received] = '\0';
-
-            printf("command received: %s\n", buf);
-
-            // verifica se o comando é "send file"
-            if (strcmp(buf, "send file") == 0)
-            {
-                // recebe o nome do arquivo
-                bytes_received = recv(client_sock, buf, BUFSZ, 0);
-                if (bytes_received > 0)
-                {
-                    buf[bytes_received] = '\0';
-                    printf("file received from client: %s", buf);
-
-                    // verifica se arquivo já existe no servidor
-                    FILE *file = fopen(buf, "rb");
-                    if (file != NULL)
-                    {
-                        fclose(file);
-
-                        // sobrescreve
-                        file = fopen(buf, "wb");
-                        if (file == NULL)
-                        {
-                            strcpy(buf, "error receiving file");
-                            send(client_sock, buf, strlen(buf), 0);
-                            printf("error trying to overwritten file\n");
-                        }
-                        else
-                        {
-                            // recebe o arquivo do cliente e salva no servidor
-                            ssize_t bytes_read;
-                            while ((bytes_read = recv(client_sock, buf, BUFSZ, 0) > 0))
-                            {
-                                fwrite(buf, sizeof(char), bytes_read, file);
-                            }
-
-                            fclose(file);
-
-                            strcpy(buf, "file overwritten");
-                            send(client_sock, buf, strlen(buf), 0);
-                            printf("file overwritten\n");
-                        }
-                    }
-                    else
-                    {
-                        // cria novo arquivo no servidor
-
-                        file = fopen(buf, "wb");
-                        if (file == NULL)
-                        {
-                            strcpy(buf, "error receiving file");
-                            send(client_sock, buf, strlen(buf), 0);
-                            printf("error trying to create a new file\n");
-                        }
-                        else
-                        {
-                            // recebe o arquivo e salva no servidor
-                            ssize_t bytes_read;
-                            while ((bytes_read = recv(client_sock, buf, BUFSZ, 0) > 0))
-                            {
-                                fwrite(buf, sizeof(char), bytes_read, file);
-                            }
-
-                            fclose(file);
-
-                            strcpy(buf, "file received");
-                            send(client_sock, buf, strlen(buf), 0);
-                            printf("file received and stored.");
-                        }
-                    }
-                }
-            }
+            logExit("send");
         }
-        close(client_sock);
+        close(csock);
     }
-
-    // encerra com cliente
-    close(s);
 
     exit(EXIT_SUCCESS);
 }
