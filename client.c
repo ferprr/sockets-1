@@ -113,14 +113,14 @@ int main(int argc, char **argv)
         }
         else if (strcmp(buf, "send file") == 0 && selected)
         {
-            // // Envia o nome do arquivo para o servidor
-            // if (send(s, selected_file, strlen(selected_file), 0) < 0)
-            // {
-            //     perror("Erro ao enviar nome do arquivo para o servidor");
-            //     break;
-            // }
+            // Envia o nome do arquivo para o servidor
+            if (send(s, selected_file, strlen(selected_file), 0) < 0)
+            {
+                perror("Erro ao enviar nome do arquivo para o servidor");
+                break;
+            }
 
-            // Abre o arquivo para leitura
+            //Abre o arquivo para leitura
             FILE *file = fopen(selected_file, "rb");
             if (file == NULL)
             {

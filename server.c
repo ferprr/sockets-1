@@ -77,11 +77,38 @@ int main(int argc, char **argv)
         char buf[BUFSZ];
         memset(buf, 0, BUFSZ);
 
+        int overwritten = 0;
+
+        if (recv(csock, buf, BUFSZ, 0) < 0)
+        {
+            perror("Erro ao receber nome do arquivo do cliente");
+            break;
+        }
+
+        char filename[100];
+        strcpy(filename, buf);
+        // puts(filename);
+
+        // Verifica se o arquivo já existe
+        if (access(filename, F_OK) == 0)
+        {
+            // Remove o arquivo existente
+            if (remove(filename) != 0)
+            {
+                perror("Erro ao remover arquivo existente");
+                break;
+            }
+
+            overwritten = 1;
+        }
+
+        memset(buf, 0, BUFSZ);
+
         // Recebe dados do cliente
         int bytesRead = recv(csock, buf, BUFSZ, 0);
         if (bytesRead < 0)
         {
-            perror("Erro ao receber dados do cliente");
+            // perror("Erro ao receber dados do cliente");
             break;
         }
         else if (bytesRead == 0)
@@ -90,8 +117,10 @@ int main(int argc, char **argv)
             break;
         }
 
+        printf("file %s received", filename);
+
         // Abre o arquivo para escrita
-        FILE *file = fopen("x.txt", "wb");
+        FILE *file = fopen(filename, "wb");
         if (file == NULL)
         {
             printf("Erro ao abrir arquivo\n");
@@ -105,6 +134,11 @@ int main(int argc, char **argv)
         if (bytesRead < BUFSZ)
         {
             break;
+        }
+
+        if (overwritten)
+        {
+            printf("file %s overwritten", filename);
         }
 
         fclose(file);
