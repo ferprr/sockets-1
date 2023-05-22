@@ -17,6 +17,7 @@ int is_valid_extension(const char *filename)
     int num_valid_extensions = sizeof(valid_extensions) / sizeof(valid_extensions[0]);
 
     const char *extension = strrchr(filename, '.'); // retorna ponteiro para '.' encontrado no filename
+    puts(extension);
     if (extension != NULL)
     {
         for (int i = 0; i < num_valid_extensions; i++)
@@ -64,33 +65,114 @@ int main(int argc, char **argv)
 
     char addrstr[BUFSZ];
     addrToStr(addr, addrstr, BUFSZ);
+    int selected = 0;
 
     printf("connected to %s\n", addrstr);
 
-    char buf[BUFSZ];
-    memset(buf, 0, BUFSZ);
-    printf("mensagem> ");
-    fgets(buf, BUFSZ - 1, stdin);
-    size_t count = send(s, buf, strlen(buf) + 1, 0);
-    if (count != strlen(buf) + 1)
-    {
-        logExit("send");
-    }
-
-    memset(buf, 0, BUFSZ);
-    unsigned total = 0;
+    // Loop principal
     while (1)
     {
-        count = recv(s, buf + total, BUFSZ - total, 0);
-        if (count == 0)
+        char buf[BUFSZ];
+        memset(buf, 0, BUFSZ);
+        printf("command> ");
+        fgets(buf, BUFSZ - 1, stdin);
+        buf[strcspn(buf, "\n")] = '\0';
+
+        // Verifica o tipo de comando
+        if (strcmp(buf, "exit") == 0)
         {
-            // Connection terminated.
+            printf("Sessão encerrada pelo cliente\n");
             break;
         }
-        total += count;
-    }
-    close(s);
+        else if (strncmp(buf, "select file", 11) == 0)
+        {
+            // Extrai o nome do arquivo
+            char *filename = buf + 12;
+            if (sscanf(buf, "select file %[^\n]", filename) == 1)
+            {
+                // Verifica se o arquivo é válido (extensões aceitáveis)
+                if (is_valid_extension(filename) == 0)
+                {
+                    puts(filename);
+                    printf("%s not valid!\n", filename);
+                    continue;
+                }
+                else
+                {
+                    printf("%s selected\n", filename);
+                    selected = 1;
+                }
 
-    printf("received %u bytes\n", total);
-    puts(buf);
+                printf("passou nas ver\n");
+            }
+            else
+            {
+                printf("no file selected.\n");
+            }
+
+            // send(s, buf, strlen(buf), 0);
+        }
+        else if (strcmp(buf, "send file") == 0 && selected)
+        {
+            printf("pronto apra enviar\n");
+            //     // Recebe o arquivo do cliente
+            //     memset(buf, 0, BUFSZ);
+            //     if (recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0) < 0)
+            //     {
+            //         perror("Erro ao receber arquivo do cliente");
+            //         break;
+            //     }
+
+            //     // Extrai o nome do arquivo
+            //     char *filename = buffer + 5;
+
+            //     // Abre o arquivo para escrita
+            //     file = fopen(filename, "wb");
+            //     if (file == NULL)
+            //     {
+            //         sprintf(buffer, "error receiving file %s", filename);
+            //         send(clientSocket, buffer, strlen(buffer), 0);
+            //         break;
+            //     }
+
+            //     // Recebe e armazena o conteúdo do arquivo
+            //     while (1)
+            //     {
+            //         memset(buffer, 0, MAX_BUFFER_SIZE);
+            //         int bytesRead = recv(clientSocket, buffer, MAX_BUFFER_SIZE, 0);
+            //         if (bytesRead < 0)
+            //         {
+            //             perror("Erro ao receber arquivo do cliente");
+            //             break;
+            //         }
+            //         if (bytesRead == 0)
+            //         {
+            //             break; // Fim do arquivo
+            //         }
+            //         fwrite(buffer, 1, bytesRead, file);
+            //     }
+
+            //     fclose(file);
+
+            //     // Envia a resposta ao cliente
+            //     sprintf(buffer, "file %s received", filename);
+            //     send(clientSocket, buffer, strlen(buffer), 0);
+            // }
+            // else
+            // {
+            //     sprintf(buffer, "Comando desconhecido");
+            //     send(clientSocket, buffer, strlen(buffer), 0);
+        }
+        else if (strcmp(buf, "send file") == 0 && !selected)
+        {
+            printf("no file selected.\n");
+        }
+        else
+        {
+            printf("invalid command.\n");
+        }
+    }
+
+    // Encerra a conexão com o cliente
+    close(s);
 }
