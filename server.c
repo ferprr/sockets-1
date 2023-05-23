@@ -116,7 +116,7 @@ int main(int argc, char **argv)
                     memset(buf, 0, BUFSZ);
                     while ((bytes_received = recv(csock, buf, BUFSZ, 0)) > 0)
                     {
-                        fwrite(buf, sizeof(char), bytes_received, file);
+                        fprintf(buf, sizeof(char), bytes_received, file);
                     }
                 }
                 fclose(file);

@@ -30,12 +30,6 @@ int is_valid_extension(const char *filename)
 
     return 0;
 }
-void send_message(int socket, const char *message, const char *filename)
-{
-    char buffer[BUFSZ];
-    sprintf(buffer, "%s %s", filename, message);
-    send(socket, buffer, strlen(buffer), 0);
-}
 void usage(int argc, char **argv)
 {
     printf("usage: %s <server ip> <server port>\n", argv[0]);
