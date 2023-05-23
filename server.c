@@ -85,7 +85,6 @@ int main(int argc, char **argv)
         if (bytes_received > 0)
         {
             buf[bytes_received] = '\0';
-            printf("buf %s", buf);
 
             strncpy(command, buf, 9);
 
@@ -95,18 +94,13 @@ int main(int argc, char **argv)
 
                 // Extrai o nome do arquivo
                 file_path = buf + 10;
-                puts(file_path);
-                // printf("Arquivo recebido do cliente: %s\n", file_path);
 
                 printf("file %s received\n", file_path);
+
                 // Verifica se o arquivo já existe no servidor
                 FILE *file = fopen(file_path, "rb");
                 if (file)
                 {
-                    // fclose(file);
-                    //  Envia a resposta de arquivo sobrescrito ao cliente
-                    // strcpy(buf, "file overwritten");
-                    // send(csock, buf, strlen(buf), 0);
                     printf("file %s overwritten\n", file_path);
                 }
 
@@ -115,26 +109,22 @@ int main(int argc, char **argv)
                 if (file == NULL)
                 {
                     printf("error receiving file");
-                    // send(csock, buf, strlen(buf), 0);
-                    //  printf("Erro ao criar o novo arquivo\n");
                 }
                 else
                 {
-                    // Receber o conteúdo do arquivo e escrever no disco
+                    // Recebe o conteúdo do arquivo e escreve no disco
                     memset(buf, 0, BUFSZ);
                     while ((bytes_received = recv(csock, buf, BUFSZ, 0)) > 0)
                     {
                         fwrite(buf, sizeof(char), bytes_received, file);
-                        // memset(buf, 0, BUFSZ);
                     }
                 }
                 fclose(file);
             }
 
-            // char exit_command[4];
             strcpy(command, strtok(buf, " "));
             strncpy(command, buf, 4);
-            puts(command);
+
             // Verifica se o comando é "exit"
             if (strcmp(command, "exit") == 0)
             {
