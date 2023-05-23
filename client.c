@@ -131,11 +131,16 @@ int main(int argc, char **argv)
                 // return 0;
             }
 
-            // Envia o comando "send file" para o servidor
-            send(s, "send file", BUFSZ, 0);
+            sprintf(buf, "%s %s %s", command, arg, file_path);
+            // send(s, buf, strlen(buf), 0);
 
-            // Envia o comando "send file" para o servidor
-            send(s, file_path, strlen(file_path), 0);
+            // Envia o comando para o servidor
+            send(s, buf, BUFSZ, 0);
+
+            memset(buf, 0, BUFSZ);
+
+            // // Envia o comando "send file" para o servidor
+            // send(s, file_path, strlen(file_path), 0);
 
             // Envia o arquivo para o servidor
             ssize_t bytes_read;
@@ -145,14 +150,15 @@ int main(int argc, char **argv)
             }
 
             fclose(file);
+            continue;
 
-            // Recebe a resposta do servidor
-            ssize_t bytes_received = recv(s, buf, BUFSZ, 0);
-            if (bytes_received > 0)
-            {
-                buf[bytes_received] = '\0';
-                printf("Resposta do servidor: %s\n", buf);
-            }
+            // // Recebe a resposta do servidor
+            // ssize_t bytes_received = recv(s, buf, BUFSZ, 0);
+            // if (bytes_received > 0)
+            // {
+            //     buf[bytes_received] = '\0';
+            //     printf("Resposta do servidor: %s\n", buf);
+            // }
         }
         else if (strcmp(command, "send") == 0 && strcmp(arg, "file") == 0 && !selected)
         {
@@ -161,10 +167,14 @@ int main(int argc, char **argv)
         // Encerra a conexão com o servidor
         else if (strcmp(command, "exit") == 0)
         {
-            send_message(s, "exit", "");
+            send(s, "exit", BUFSZ, 0);
             close(s);
-            printf("client closed connection\n");
             return 0;
+        }
+        else
+        {
+            printf("invalid command\n");
+            continue;
         }
     }
 

@@ -71,11 +71,13 @@ int main(int argc, char **argv)
     char caddrstr[BUFSZ];
     addrToStr(caddr, caddrstr, BUFSZ);
     printf("[log] connection from %s\n", caddrstr);
-    char file_path[256];
+    char *file_path;
 
     while (1)
     {
         char buf[BUFSZ];
+        char command[15];
+
         memset(buf, 0, BUFSZ);
 
         // Recebe o comando do cliente
@@ -83,65 +85,64 @@ int main(int argc, char **argv)
         if (bytes_received > 0)
         {
             buf[bytes_received] = '\0';
-            printf("Comando recebido do cliente: %s\n", buf);
+            printf("buf %s", buf);
+
+            strncpy(command, buf, 9);
 
             // Verifica se o comando é "send file"
-            if (strcmp(buf, "send file") == 0)
+            if (strcmp(command, "send file") == 0)
             {
-                // Recebe o nome do arquivo do cliente
-                bytes_received = recv(csock, buf, BUFSZ, 0);
-                if (bytes_received > 0)
+
+                // Extrai o nome do arquivo
+                file_path = buf + 10;
+                puts(file_path);
+                // printf("Arquivo recebido do cliente: %s\n", file_path);
+
+                printf("file %s received\n", file_path);
+                // Verifica se o arquivo já existe no servidor
+                FILE *file = fopen(file_path, "rb");
+                if (file)
                 {
-                    buf[bytes_received] = '\0';
-                    strcpy(file_path, buf);
-                    printf("Arquivo recebido do cliente: %s\n", file_path);
+                    // fclose(file);
+                    //  Envia a resposta de arquivo sobrescrito ao cliente
+                    // strcpy(buf, "file overwritten");
+                    // send(csock, buf, strlen(buf), 0);
+                    printf("file %s overwritten\n", file_path);
+                }
 
-                    // Verifica se o arquivo já existe no servidor
-                    FILE *file = fopen(file_path, "rb");
-                    if (file != NULL)
+                // Cria um novo arquivo no servidor
+                file = fopen(file_path, "wb");
+                if (file == NULL)
+                {
+                    printf("error receiving file");
+                    // send(csock, buf, strlen(buf), 0);
+                    //  printf("Erro ao criar o novo arquivo\n");
+                }
+                else
+                {
+                    // Receber o conteúdo do arquivo e escrever no disco
+                    memset(buf, 0, BUFSZ);
+                    while ((bytes_received = recv(csock, buf, BUFSZ, 0)) > 0)
                     {
-                        // fclose(file);
-                        //  Envia a resposta de arquivo sobrescrito ao cliente
-                        strcpy(buf, "file overwritten");
-                        send(csock, buf, strlen(buf), 0);
-                        printf("Arquivo sobrescrito\n");
-                    }
-                    else
-                    {
-                        // Cria um novo arquivo no servidor
-                        file = fopen(file_path, "wb");
-                        if (file == NULL)
-                        {
-                            strcpy(buf, "error receiving file");
-                            send(csock, buf, strlen(buf), 0);
-                            printf("Erro ao criar o novo arquivo\n");
-                        }
-                        else
-                        {
-                            // Recebe o arquivo do cliente e salva no servidor
-                            ssize_t bytes_read;
-                            while ((bytes_read = recv(csock, buf, BUFSZ, 0)) > 0)
-                            {
-                                fwrite(buf, sizeof(char), bytes_read, file);
-                            }
-
-                            fclose(file);
-
-                            // Envia a resposta de sucesso ao cliente
-                            strcpy(buf, "file received");
-                            send(csock, buf, strlen(buf), 0);
-                            printf("Arquivo recebido e salvo com sucesso\n");
-                        }
+                        fwrite(buf, sizeof(char), bytes_received, file);
+                        // memset(buf, 0, BUFSZ);
                     }
                 }
+                fclose(file);
             }
+
+            // char exit_command[4];
+            strcpy(command, strtok(buf, " "));
+            strncpy(command, buf, 4);
+            puts(command);
             // Verifica se o comando é "exit"
-            else if (strcmp(buf, "exit") == 0)
+            if (strcmp(command, "exit") == 0)
             {
-                printf("Cliente solicitou encerramento da conexão\n");
                 // Encerra a conexão com o cliente
+                printf("client closed connection\n");
                 close(csock);
                 close(s);
+                return 0;
             }
         }
     }
